@@ -1,0 +1,35 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/super-dashboard",
+        "destination": "/super-dashboard.html"
+      },
+      {
+        "source": "/institution-dashboard",
+        "destination": "/institution-dashboard.html"
+      },
+      {
+        "source": "/result",
+        "destination": "/result-view.html"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "functions": {
+    "source": "functions"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Institution Admin | Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- CSS -->
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <div class="d-flex" id="wrapper">
+
+        <!-- Sidebar -->
+        <div class="bg-white border-end" id="sidebar-wrapper" style="width: 250px; min-height: 100vh;">
+            <div class="sidebar-heading p-4 border-bottom bg-light">
+                <h5 class="fw-bold text-primary m-0">
+                    <i class="fa-solid fa-school me-2"></i> Institution
+                </h5>
+            </div>
+            <div class="list-group list-group-flush pt-2">
+                <a href="#students" id="tab-students"
+                    class="list-group-item list-group-item-action bg-transparent border-0 active fw-bold text-primary"
+                    data-bs-toggle="list">
+                    <i class="fa-solid fa-users me-2"></i> Students
+                </a>
+                <a href="#subjects" id="tab-subjects"
+                    class="list-group-item list-group-item-action bg-transparent border-0 fw-bold text-dark"
+                    data-bs-toggle="list">
+                    <i class="fa-solid fa-book me-2"></i> Subjects
+                </a>
+                <a href="#marks" id="tab-marks"
+                    class="list-group-item list-group-item-action bg-transparent border-0 fw-bold text-dark"
+                    data-bs-toggle="list">
+                    <i class="fa-solid fa-marker me-2"></i> Marks Entry
+                </a>
+                <a href="#publish" id="tab-publish"
+                    class="list-group-item list-group-item-action bg-transparent border-0 fw-bold text-dark"
+                    data-bs-toggle="list">
+                    <i class="fa-solid fa-bullhorn me-2"></i> Publish Results
+                </a>
+            </div>
+            <div class="mt-auto p-4 border-top">
+                <button id="logoutBtn" class="btn btn-outline-danger w-100 btn-sm">
+                    <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper" class="flex-grow-1 bg-light">
+
+            <!-- Top Nav -->
+            <nav class="navbar navbar-light bg-white border-bottom shadow-sm px-4 py-3 mb-4">
+                <button class="btn btn-light btn-sm d-md-none" id="menu-toggle">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <span class="navbar-text ms-auto small text-muted">
+                    Logged in as: <strong id="adminEmailDisplay">--</strong>
+                </span>
+            </nav>
+
+            <div id="sidebar-overlay"></div>
+
+            <div class="container-fluid px-4">
+
+                <!-- Global Exam Context -->
+                <div class="card border-0 mb-4 overflow-hidden shadow-sm"
+                    style="border-radius: 16px; background: linear-gradient(145deg, #ffffff 0%, #f8faff 100%);">
+                    <div
+                        class="card-body p-4 d-flex flex-column flex-lg-row align-items-lg-center justify-content-between position-relative">
+                        <!-- Left Section -->
+                        <div class="d-flex align-items-center mb-3 mb-lg-0">
+                            <div class="bg-primary text-white p-3 rounded-circle me-3 d-flex align-items-center justify-content-center shadow-soft"
+                                style="width: 54px; height: 54px;">
+                                <i class="fa-solid fa-sliders fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="fw-bold mb-1 text-dark" style="letter-spacing: -0.5px;">Global Context</h5>
+                                <p class="mb-0 text-muted small">Select the active session to manage records</p>
+                            </div>
+                        </div>
+
+                        <!-- Right Section (Controls) -->
+                        <div class="d-flex flex-wrap gap-2 p-2 rounded-4 bg-white border shadow-sm">
+                            <!-- Academic Year Selector -->
+                            <div class="d-flex align-items-center bg-light rounded-3 px-3 py-1 border-0">
+                                <i class="fa-solid fa-calendar-days text-primary me-2"></i>
+                                <select id="globalAcademicYear"
+                                    class="form-select form-select-sm fw-bold border-0 bg-transparent shadow-none text-dark"
+                                    style="min-width: 120px; cursor: pointer;">
+                                    <option value="2024-2025" selected>2024-2025</option>
+                                    <option value="2025-2026">2025-2026</option>
+                                </select>
+                            </div>
+
+                            <!-- Exam Type Selector -->
+                            <div class="d-flex align-items-center bg-light rounded-3 px-3 py-1 border-0">
+                                <i class="fa-solid fa-file-signature text-primary me-2"></i>
+                                <select id="globalExamType"
+                                    class="form-select form-select-sm fw-bold border-0 bg-transparent shadow-none text-dark"
+                                    style="min-width: 150px; cursor: pointer;">
+                                    <option value="Annual Exam" selected>Annual Exam</option>
+                                    <option value="Half Yearly Exam">Half Yearly Exam</option>
+                                    <option value="Quarterly Exam">Quarterly Exam</option>
+                                    <option value="Model Exam">Model Exam</option>
+                                </select>
+                            </div>
+
+                            <!-- Add Button -->
+                            <button
+                                class="btn btn-primary btn-sm rounded-3 shadow-soft d-flex align-items-center justify-content-center px-3"
+                                data-bs-toggle="modal" data-bs-target="#addExamModal" title="Add New Exam Type">
+                                <i class="fa-solid fa-plus me-1"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content">
+
+                    <!-- STUDENTS TAB -->
+                    <div class="tab-pane fade show active" id="students">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold text-dark">Manage Students</h4>
+                            <div>
+                                <button class="btn btn-outline-primary btn-sm me-2 d-none d-md-inline-block"
+                                    data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                                    <i class="fa-solid fa-plus me-2"></i> Bulk Add
+                                </button>
+                                <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                                    data-bs-target="#uploadModal">
+                                    <i class="fa-solid fa-upload me-2"></i> CSV
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Class Folders Area -->
+                        <div id="classFoldersArea" class="row g-4 animate-fade-in"></div>
+
+                        <!-- Students Table Area (Hidden initially) -->
+                        <div id="studentsTableArea" class="d-none animate-fade-in">
+                            <div class="mb-3 d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <button class="btn btn-light btn-sm shadow-sm" id="backToFoldersBtn">
+                                        <i class="fa-solid fa-arrow-left me-2"></i> Back
+                                    </button>
+                                    <h5 class="mb-0 ms-3 fw-bold text-primary" id="currentClassTitle"></h5>
+                                </div>
+                                <button class="btn btn-primary btn-sm" id="contextAddStudentBtn" data-bs-toggle="modal"
+                                    data-bs-target="#addStudentModal">
+                                    <i class="fa-solid fa-plus me-1"></i> Add Students
+                                </button>
+                            </div>
+                            <div class="card shadow border-0">
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0" id="studentsTable">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th class="ps-4">Name</th>
+                                                    <th>Register No</th>
+                                                    <th>Class</th>
+                                                    <th class="text-end pe-4">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="studentsList"></tbody>
+                                        </table>
+                                    </div>
+                                    <div id="studentsEmpty" class="text-center py-5 d-none">
+                                        <i class="fa-solid fa-user-graduate fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted small">No students found.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUBJECTS TAB -->
+                    <div class="tab-pane fade" id="subjects">
+                        <!-- Subjects Folders View -->
+                        <div id="subjectClassFoldersArea">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="fw-bold text-dark">Manage Subjects</h4>
+                                <button class="btn btn-primary btn-sm shadow-soft" data-bs-toggle="modal"
+                                    data-bs-target="#addSubjectModal">
+                                    <i class="fa-solid fa-plus me-2"></i> Bulk Add Subjects
+                                </button>
+                            </div>
+                            <div class="row g-3" id="subjectFoldersList">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <div id="subjectFoldersEmpty" class="text-center py-5 d-none w-100">
+                                <i class="fa-solid fa-folder-open fa-2x text-muted mb-2"></i>
+                                <p class="text-muted small">No classes found.</p>
+                            </div>
+                        </div>
+
+                        <!-- Subjects List View (Hidden by default) -->
+                        <div id="subjectListViewArea" class="d-none">
+                            <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                                <button class="btn btn-light btn-sm shadow-sm" id="backToSubjectFoldersBtn">
+                                    <i class="fa-solid fa-arrow-left me-2"></i> Back
+                                </button>
+                                <h5 class="mb-0 ms-3 fw-bold text-primary" id="currentSubjectClassTitle"></h5>
+                                <button class="btn btn-outline-primary btn-sm ms-auto shadow-sm" data-bs-toggle="modal"
+                                    data-bs-target="#addSubjectModal">
+                                    <i class="fa-solid fa-plus me-1"></i> Add Subject
+                                </button>
+                            </div>
+
+                            <div class="row" id="subjectsList">
+                                <!-- Subject Cards -->
+                            </div>
+                            <div id="subjectsEmpty" class="text-center py-5 d-none w-100">
+                                <i class="fa-solid fa-book-open fa-2x text-muted mb-2"></i>
+                                <p class="text-muted small">No subjects added.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MARKS TAB -->
+                    <div class="tab-pane fade" id="marks">
+                        <!-- Marks Folders View -->
+                        <div id="marksClassFoldersArea">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="fw-bold text-dark">Marks Entry</h4>
+                            </div>
+                            <div class="row g-3" id="marksFoldersList">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <div id="marksFoldersEmpty" class="text-center py-5 d-none w-100">
+                                <i class="fa-solid fa-folder-open fa-2x text-muted mb-2"></i>
+                                <p class="text-muted small">No classes found.</p>
+                            </div>
+                        </div>
+
+                        <div id="marksEntryArea" class="d-none">
+                            <div class="card shadow border-0">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <button class="btn btn-light btn-sm shadow-sm me-3" id="backToMarksFoldersBtn">
+                                            <i class="fa-solid fa-arrow-left"></i>
+                                        </button>
+                                        <h6 class="fw-bold m-0 text-primary" id="marksEntryTitle">Enter Marks</h6>
+                                    </div>
+                                    <button id="saveMarksBtn" class="btn btn-success btn-sm">
+                                        <i class="fa-solid fa-save me-2"></i> Save All
+                                    </button>
+                                </div>
+                                <div class="card-body p-0 table-responsive">
+                                    <table class="table table-hover align-middle mb-0" style="white-space: nowrap;">
+                                        <thead class="bg-light">
+                                            <tr id="marksEntryTableHead">
+                                                <th class="ps-4" style="min-width: 200px;">Student Name</th>
+                                                <th style="min-width: 150px;">Register No</th>
+                                                <!-- Dynamic Subject Columns inserted here -->
+                                            </tr>
+                                        </thead>
+                                        <tbody id="marksEntryTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PUBLISH TAB -->
+                    <div class="tab-pane fade" id="publish">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h4 class="fw-bold text-dark">Publish Results</h4>
+                            <button type="button" id="publishAllBtn" class="btn btn-success btn-sm fw-bold shadow-soft">
+                                <i class="fa-solid fa-check-double me-2"></i> Publish All Classes
+                            </button>
+                        </div>
+
+                        <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4">
+                            <i class="fa-solid fa-info-circle fa-lg me-3 text-primary"></i>
+                            <div>
+                                <strong class="text-dark">Global Publishing:</strong> Select a specific Class Folder
+                                below, or use the "Publish All" button to immediately make the currently selected Global
+                                Exam Context visible to students.
+                            </div>
+                        </div>
+
+                        <!-- Publish Folders View -->
+                        <div id="publishClassFoldersArea">
+                            <div class="row g-3" id="publishFoldersList">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <div id="publishFoldersEmpty" class="text-center py-5 d-none w-100">
+                                <i class="fa-solid fa-folder-open fa-2x text-muted mb-2"></i>
+                                <p class="text-muted small">No classes found.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Upload Students CSV</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Format: Name, RegisterNo, ClassId (Header required)</p>
+                    <input type="file" id="csvFile" class="form-control" accept=".csv">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="processCsvBtn">Upload</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Add Student Modal -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Bulk Add Students</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bulkStudentForm">
+                        <!-- Common Fields -->
+                        <div class="row g-3 mb-4 p-3 bg-light rounded border">
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold text-muted">Class <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" id="bulkClass" class="form-control" placeholder="e.g. 10-A, 10-B"
+                                    required>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Grid -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold m-0"><i class="fa-solid fa-list-ol me-2"></i>Student List</h6>
+                            <button type="button" class="btn btn-sm btn-outline-success" id="addRowBtn">
+                                <i class="fa-solid fa-plus me-1"></i> Add Row
+                            </button>
+                        </div>
+
+                        <div class="table-responsive border rounded" style="max-height: 400px; overflow-y: auto;">
+                            <table
+                                class="table table-sm table-bordered table-hover align-middle mb-0 mobile-stacked-table">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 50px;">#</th>
+                                        <th>Student Name <span class="text-danger">*</span></th>
+                                        <th style="width: 200px;">Register/Roll No <span class="text-danger">*</span>
+                                        </th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkRows">
+                                    <!-- Rows added via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <span class="small text-muted" id="rowCountDisplay">0 students</span>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="saveBulkBtn">
+                            <i class="fa-solid fa-save me-2"></i> Save All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Edit Student</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editStudentForm">
+                        <input type="hidden" id="editStudentId">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Student Name</label>
+                            <input type="text" id="editStudentName" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Register No</label>
+                            <input type="text" id="editStudentRegNo" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">Class</label>
+                            <input type="text" id="editStudentClass" class="form-control" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="saveEditStudentBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Student Modal -->
+    <div class="modal fade" id="viewStudentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 bg-primary-subtle text-primary">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-graduate me-2"></i>Student Details</h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="bg-primary text-white p-3 rounded-circle d-inline-flex mb-3 shadow-soft"
+                        style="width: 80px; height: 80px;">
+                        <i class="fa-solid fa-user fs-1 m-auto"></i>
+                    </div>
+                    <h4 class="fw-bold text-dark mb-1" id="viewStudentName">--</h4>
+                    <span class="badge bg-light text-dark border mb-4" id="viewStudentClass">--</span>
+
+                    <div class="row text-start g-3">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-3 border h-100">
+                                <small class="text-muted fw-bold d-block mb-1">Register No</small>
+                                <span class="font-monospace fw-bold text-dark" id="viewStudentRegNo">--</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-3 border h-100">
+                                <small class="text-muted fw-bold d-block mb-1">Academic Year</small>
+                                <span class="fw-bold text-dark" id="viewStudentYear">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Add Subject Modal -->
+    <div class="modal fade" id="addSubjectModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Bulk Add Subjects</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bulkSubjectForm">
+                        <div class="row g-3 mb-4 p-3 bg-light rounded border">
+                            <div class="col-md-12">
+                                <label class="form-label small fw-bold text-muted">Class <span
+                                        class="text-danger">*</span></label>
+                                <select id="bulkSubjectClass" class="form-select" required>
+                                    <option value="">Choose Class...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Max Marks (Default) <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" id="bulkSubMax" class="form-control" value="100" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold text-muted">Min Pass Marks (Default) <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" id="bulkSubMin" class="form-control" value="35" required>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="fw-bold m-0"><i class="fa-solid fa-list-ol me-2"></i>Subject List</h6>
+                            <button type="button" class="btn btn-sm btn-outline-success" id="addSubRowBtn">
+                                <i class="fa-solid fa-plus me-1"></i> Add Row
+                            </button>
+                        </div>
+
+                        <div class="table-responsive border rounded" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-sm table-bordered align-middle mb-0 mobile-stacked-table">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th style="width: 50px;">#</th>
+                                        <th>Subject Name <span class="text-danger">*</span></th>
+                                        <th style="width: 200px;">Code</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bulkSubRows">
+                                    <!-- Rows added via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <span class="small text-muted" id="subRowCountDisplay">0 subjects</span>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="saveBulkSubjectBtn">
+                            <i class="fa-solid fa-save me-2"></i> Save Subjects
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Exam Modal -->
+    <div class="modal fade" id="addExamModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">New Exam Type</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="newExamTypeInput" class="form-control" placeholder="e.g. Unit Test 1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary w-100" id="saveExamTypeBtn">Add Exam</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Mobile Nav -->
+    <nav class="bottom-nav d-md-none" id="mobileNavGrid">
+        <a href="#students" class="nav-item active" data-bs-toggle="list" data-target-tab="tab-students"><i
+                class="fa-solid fa-users"></i>Students</a>
+        <a href="#subjects" class="nav-item" data-bs-toggle="list" data-target-tab="tab-subjects"><i
+                class="fa-solid fa-book"></i>Subjects</a>
+        <a href="#marks" class="nav-item" data-bs-toggle="list" data-target-tab="tab-marks"><i
+                class="fa-solid fa-marker"></i>Marks</a>
+        <a href="#publish" class="nav-item" data-bs-toggle="list" data-target-tab="tab-publish"><i
+                class="fa-solid fa-bullhorn"></i>Results</a>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="assets/js/firebase-init.js"></script>
+    <script type="module" src="assets/js/role-guard.js"></script>
+    <script type="module">
+        import { requireAuth } from "./assets/js/role-guard.js";
+        requireAuth('institution');
+
+        // Toggle Menu
+        const wrapper = document.getElementById("wrapper");
+        const overlay = document.getElementById("sidebar-overlay");
+
+        document.getElementById("menu-toggle").addEventListener("click", function (e) {
+            e.preventDefault();
+            wrapper.classList.toggle("toggled");
+        });
+
+        overlay.addEventListener("click", function () {
+            wrapper.classList.remove("toggled");
+        });
+
+        // Tab Sync for Styles
+        const sidebarLinks = document.querySelectorAll('#sidebar-wrapper .list-group-item');
+        const mobileLinks = document.querySelectorAll('.bottom-nav .nav-item');
+
+        function activateTabUI(hrefId) {
+            sidebarLinks.forEach(i => {
+                i.classList.remove('active', 'text-primary');
+                i.classList.add('text-dark');
+                if (i.getAttribute('href') === hrefId) {
+                    i.classList.add('active', 'text-primary');
+                    i.classList.remove('text-dark');
+                }
+            });
+
+            mobileLinks.forEach(i => {
+                i.classList.remove('active');
+                if (i.getAttribute('href') === hrefId) {
+                    i.classList.add('active');
+                }
+            });
+
+            // Close sidebar automatically on mobile when navigating
+            if (window.innerWidth < 768) {
+                wrapper.classList.remove("toggled");
+            }
+        }
+
+        sidebarLinks.forEach(l => {
+            l.addEventListener('click', (e) => {
+                activateTabUI(l.getAttribute('href'));
+            });
+        });
+
+        mobileLinks.forEach(l => {
+            l.addEventListener('click', (e) => {
+                activateTabUI(l.getAttribute('href'));
+            });
+        });
+    </script>
+    <script type="module" src="assets/js/institution-admin.js"></script>
+
+    <style>
+        #wrapper.toggled #sidebar-wrapper {
+            margin-left: -250px;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar-wrapper {
+                margin-left: -250px;
+                position: fixed;
+                z-index: 1000;
+                height: 100%;
+            }
+
+            #wrapper.toggled #sidebar-wrapper {
+                margin-left: 0;
+            }
+        }
+    </style>
+
+</body>
+
+</html>

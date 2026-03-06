@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Role helpers
+    // CAUTION: recursing into userDoc() for every request might be expensive or hit limits if not careful.
+    // In production, Custom Claims in Auth Tokens is better, but for this structure:
+    function userRole() {
+      return userDoc().data.role;
+    }
+
+    function userInstitution() {
+      return userDoc().data.institutionId;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && userRole() == "super";
+    }
+
+    function isInstitutionAdmin() {
+      return isAuthenticated() && userRole() == "institution";
+    }
+
+    function sameInstitution(institutionId) {
+      return isInstitutionAdmin() &&
+             userInstitution() == institutionId;
+    }
+
+    /* =============================
+       USERS COLLECTION
+       Critical for Role Management
+       ============================= */
+    match /users/{userId} {
+      // Super Admin can read/write any user profile (to assign roles)
+      // Users can read their own profile
+      allow read: if isSuperAdmin() || request.auth.uid == userId;
+      allow write: if isSuperAdmin(); 
+      // Note: "institution" admins do not create user docs directly in this architecture regarding roles for OTHERS, 
+      // but if they need to update own profile, add permission here. 
+      // ideally only super admin sets roles.
+    }
+
+    /* =============================
+       INSTITUTIONS
+       ============================= */
+    match /institutions/{institutionId} {
+      allow read: if true; // Public needs to read for dropdowns logic? Or restrict?
+      // Public search needs list of institutions. So read: true is okay or restrict to auth if public search is public.
+      // User requirement says "Public Result View", so strictly public read is needed.
+      
+      allow create, update, delete: if isSuperAdmin();
+    }
+
+    /* =============================
+       STUDENTS
+       ============================= */
+    match /students/{studentId} {
+      // Create: Must be inst admin of that institution
+      allow create: if sameInstitution(request.resource.data.institutionId);
+      
+      // Update/Delete: Must be inst admin of that institution
+      allow update, delete: if sameInstitution(resource.data.institutionId);
+      
+      // Read: Super admin or Inst admin or Public (if needed for result view? No, result view queries by details)
+      // Public view queries students collection by registerNo, class, etc.
+      // If we lock this, public search might fail if it tries to list students.
+      // Public search finds student by strict queries. Firestore specific rules for "search" are tricky.
+      // Usually we need `allow list` if query matches.
+      allow read: if isSuperAdmin() || 
+                     sameInstitution(resource.data.institutionId) ||
+                     true; // Public needs to query to find student ID? 
+                     // Actually result-view.js queries students collection.
+                     // To make it secure for public: allow list if query contains exact register number?
+                     // Firestore rules don't support "exact query param check" easily for read.
+                     // For now, allowing read true for students might be necessary for the public search to find the student doc ID
+                     // UNLESS we rely on Cloud Functions or strict ID knowledge.
+                     // Given "Public Result View", we'll allow read but maybe restrict fields? 
+                     // Firestore doesn't do field level read restriction easily.
+                     // We will keep 'read: true' or stricter 'read: if true' but in production we might want to obfuscate.
+    }
+
+    /* =============================
+       SUBJECTS
+       ============================= */
+    match /subjects/{subjectId} {
+      allow create: if sameInstitution(request.resource.data.institutionId);
+      allow update, delete: if sameInstitution(resource.data.institutionId);
+      allow read: if true; // Public view needs to read subject names for results
+    }
+
+    /* =============================
+       RESULTS (or Marks)
+       ============================= */
+    match /results/{resultId} {
+      // Public can read ONLY if published is true
+      allow read: if (resource.data.published == true) ||
+                     isSuperAdmin() ||
+                     sameInstitution(resource.data.institutionId);
+
+      allow create: if sameInstitution(request.resource.data.institutionId);
+      allow update, delete: if isSuperAdmin() ||
+                               sameInstitution(resource.data.institutionId);
+    }
+    
+    // Legacy collections if still used (marks, attendance) - keeping for safety or cleanup
+    match /marks/{markId} {
+        allow read, write: if isSuperAdmin() || isInstitutionAdmin();
+    }
+  }
+}

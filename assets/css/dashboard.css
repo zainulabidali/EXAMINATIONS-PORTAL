@@ -1,0 +1,99 @@
+/* Dashboard Layout */
+
+body {
+    font-family: "Segoe UI", Roboto, sans-serif;
+    background-color: #f5f7fb;
+}
+
+.navbar {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.container h5 {
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.table {
+    background-color: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+}
+
+.nav-tabs .nav-link {
+    border-radius: 8px;
+    margin-right: 5px;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: #0d6efd;
+    color: #ffffff;
+}
+
+.section-card {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+    margin-bottom: 20px;
+}
+
+.stats-card {
+    border-radius: 12px;
+    padding: 20px;
+    color: #ffffff;
+}
+
+.stats-primary {
+    background: linear-gradient(135deg, #0d6efd, #3a8bfd);
+}
+
+.stats-success {
+    background: linear-gradient(135deg, #198754, #3ecf8e);
+}
+
+.stats-warning {
+    background: linear-gradient(135deg, #ffc107, #ffda6a);
+}
+
+/* Mobile Stacked Table Validations - Modal UX */
+@media (max-width: 768px) {
+    .mobile-stacked-table thead {
+        display: none !important;
+    }
+
+    .mobile-stacked-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-bottom: 3px solid var(--border-color);
+        background: #fff;
+    }
+
+    .mobile-stacked-table tbody td {
+        display: block;
+        width: 100% !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+
+    /* Keep row index number visually centered but hidden to save space, or style as badge */
+    .mobile-stacked-table tbody td:first-child {
+        display: inline-block;
+        width: auto !important;
+        background: var(--primary-color);
+        color: white;
+        padding: 2px 8px !important;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        align-self: flex-start;
+        margin-bottom: 0.5rem;
+    }
+}

@@ -1,0 +1,52 @@
+/* Result View */
+
+body {
+    font-family: "Segoe UI", Roboto, sans-serif;
+}
+
+#resultCard {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+#institutionLogo {
+    object-fit: contain;
+}
+
+#studentDetails p {
+    margin: 2px 0;
+    font-weight: 500;
+}
+
+.table {
+    background-color: #ffffff;
+}
+
+.table th {
+    text-align: center;
+    background-color: #e9ecef;
+}
+
+.table td {
+    text-align: center;
+}
+
+.summary-box {
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+}
+
+.summary-box span {
+    font-weight: 600;
+}
+
+.topper-highlight {
+    color: #198754;
+    font-weight: bold;
+}
+
+.qr-box {
+    margin-top: 15px;
+    text-align: center;
+}
