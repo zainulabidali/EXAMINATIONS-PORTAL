@@ -1291,10 +1291,9 @@ async function loadPublishFolders() {
                             <i class="fa-solid ${isPublished ? 'fa-circle-check' : 'fa-triangle-exclamation'} me-1"></i>
                             ${isPublished ? 'Published' : 'Not Published'}
                         </span>
-                        <button class="btn btn-sm w-100 btn-publish-class ${isPublished ? 'btn-outline-secondary disabled-publish-btn' : 'btn-success'}" 
-                            ${isPublished ? 'disabled' : ''}>
+                        <button class="btn btn-sm w-100 btn-publish-class ${isPublished ? 'btn-outline-warning' : 'btn-success'}">
                             ${isPublished
-                    ? '<i class="fa-solid fa-lock me-1"></i> Already Published'
+                    ? '<i class="fa-solid fa-eye-slash me-1"></i> Unpublish Results'
                     : '<i class="fa-solid fa-check me-1"></i> Publish'}
                         </button>
                     </div>
@@ -1302,8 +1301,11 @@ async function loadPublishFolders() {
             const card = col.querySelector(".publish-folder-card");
             card.addEventListener("mouseenter", () => { card.style.transform = "translateY(-3px)"; card.style.boxShadow = "0 8px 20px rgba(0,0,0,.10)"; });
             card.addEventListener("mouseleave", () => { card.style.transform = ""; card.style.boxShadow = ""; });
-            if (!isPublished) {
-                col.querySelector(".btn-publish-class").addEventListener("click", () => publishClassAndRefresh(cls, col));
+            const actionBtn = col.querySelector(".btn-publish-class");
+            if (isPublished) {
+                actionBtn.addEventListener("click", () => unpublishClassAndRefresh(cls, col));
+            } else {
+                actionBtn.addEventListener("click", () => publishClassAndRefresh(cls, col));
             }
             area.appendChild(col);
         });
@@ -1345,19 +1347,74 @@ async function publishClassAndRefresh(classId, colEl) {
         await batch.commit();
         Toast.success(`Published ${snap.size} result(s) for ${classId}.`);
 
-        // Update UI in-place without full reload
+        // Update UI in-place: switch to Unpublish state
         const badge = colEl.querySelector(".publish-status-badge");
         badge.className = "publish-status-badge badge-published mb-3 d-block";
         badge.innerHTML = '<i class="fa-solid fa-circle-check me-1"></i> Published';
         const icon = colEl.querySelector(".fa-folder-open");
         icon.className = "fa-solid fa-folder-open fa-3x text-success mb-3";
-        btn.className = "btn btn-sm w-100 btn-outline-secondary disabled-publish-btn";
-        btn.innerHTML = '<i class="fa-solid fa-lock me-1"></i> Already Published';
-        btn.disabled = true;
-        btn.removeEventListener("click", () => publishClassAndRefresh(classId, colEl));
+        btn.className = "btn btn-sm w-100 btn-publish-class btn-outline-warning";
+        btn.innerHTML = '<i class="fa-solid fa-eye-slash me-1"></i> Unpublish Results';
+        btn.disabled = false;
+        // Replace listener: now unpublish
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener("click", () => unpublishClassAndRefresh(classId, colEl));
     } catch (err) {
         console.error(err);
         Toast.error("Failed to publish results.");
+        btn.disabled = false;
+        btn.innerHTML = orig;
+    }
+}
+
+async function unpublishClassAndRefresh(classId, colEl) {
+    const msg = `Are you sure you want to unpublish results for ${classId}? Students will no longer be able to view them.`;
+    if (!confirm(msg)) return;
+
+    const year = getAcademicYear();
+    const examType = getExamType();
+    const btn = colEl.querySelector(".btn-publish-class");
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Unpublishing…';
+
+    try {
+        const q = query(
+            collection(db, "results"),
+            where("institutionId", "==", currentInstitutionId),
+            where("academicYear", "==", year),
+            where("examType", "==", examType),
+            where("classId", "==", classId)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            Toast.info(`No results found for ${classId}.`);
+            btn.disabled = false;
+            btn.innerHTML = orig;
+            return;
+        }
+        const batch = writeBatch(db);
+        snap.forEach(d => batch.update(d.ref, { published: false }));
+        await batch.commit();
+        Toast.success(`Unpublished ${snap.size} result(s) for ${classId}.`);
+
+        // Update UI in-place: switch to Publish state
+        const badge = colEl.querySelector(".publish-status-badge");
+        badge.className = "publish-status-badge badge-unpublished mb-3 d-block";
+        badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i> Not Published';
+        const icon = colEl.querySelector(".fa-folder-open");
+        icon.className = "fa-solid fa-folder-open fa-3x text-info mb-3";
+        btn.className = "btn btn-sm w-100 btn-publish-class btn-success";
+        btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Publish';
+        btn.disabled = false;
+        // Replace listener: now publish
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener("click", () => publishClassAndRefresh(classId, colEl));
+    } catch (err) {
+        console.error(err);
+        Toast.error("Failed to unpublish results.");
         btn.disabled = false;
         btn.innerHTML = orig;
     }

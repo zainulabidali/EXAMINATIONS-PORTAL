@@ -58,10 +58,22 @@ if (loginForm) {
 
             Toast.success("Login successful! Redirecting...");
 
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (role === "super") {
                     window.location.href = "super-dashboard.html";
                 } else if (role === "institution") {
+                    // Check if institution is active before allowing in
+                    const institutionId = userDoc.data().institutionId;
+                    if (institutionId) {
+                        const instDoc = await getDoc(doc(db, "institutions", institutionId));
+                        if (instDoc.exists() && instDoc.data().active === false) {
+                            await signOut(auth);
+                            Toast.error("Institution account is inactive. Please contact administrator.");
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = "Login";
+                            return;
+                        }
+                    }
                     window.location.href = "institution-dashboard.html";
                 } else {
                     // Fallback or unauthorized

@@ -10,6 +10,7 @@ import {
     doc,
     setDoc,
     deleteDoc,
+    updateDoc,
     query,
     orderBy,
     serverTimestamp
@@ -101,6 +102,7 @@ if (instForm) {
                 name: name,
                 adminEmail: email,
                 adminUid: newUser.uid,
+                active: true,
                 createdAt: serverTimestamp()
             });
 
@@ -157,18 +159,31 @@ async function loadInstitutions() {
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
             const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : "N/A";
+            const isActive = data.active !== false; // treat missing field as active
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td class="ps-4 fw-bold text-dark">${data.name}</td>
                 <td><span class="text-muted small">${data.adminEmail}</span></td>
                 <td><span class="badge bg-light text-dark border">${date}</span></td>
+                <td>
+                    <span class="badge status-badge ${isActive ? 'bg-success' : 'bg-danger'} me-2">
+                        ${isActive ? 'Active' : 'Inactive'}
+                    </span>
+                </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${docSnap.id}">
+                    <button class="btn btn-sm ${isActive ? 'btn-outline-warning' : 'btn-outline-success'} toggle-status-btn me-1" title="${isActive ? 'Deactivate' : 'Activate'}">
+                        <i class="fa-solid ${isActive ? 'fa-ban' : 'fa-check-circle'} me-1"></i>${isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${docSnap.id}" title="Delete">
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </td>
             `;
+
+            tr.querySelector(".toggle-status-btn").addEventListener("click", () => {
+                toggleInstitutionStatus(docSnap.id, isActive, tr);
+            });
 
             // Delete Handler
             tr.querySelector(".delete-btn").addEventListener("click", () => deleteInstitution(docSnap.id, tr));
@@ -201,6 +216,52 @@ async function deleteInstitution(id, rowEl) {
     } catch (error) {
         console.error("Delete Error:", error);
         Toast.error("Failed to delete.");
+    }
+}
+
+/* =========================
+   Toggle Institution Status
+========================= */
+
+async function toggleInstitutionStatus(id, currentlyActive, rowEl) {
+    const action = currentlyActive ? "deactivate" : "activate";
+    const newActive = !currentlyActive;
+    const msg = currentlyActive
+        ? "Deactivate this institution? The admin will not be able to log in until reactivated."
+        : "Activate this institution? The admin will regain access immediately.";
+
+    if (!confirm(msg)) return;
+
+    const btn = rowEl.querySelector(".toggle-status-btn");
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+    try {
+        await updateDoc(doc(db, "institutions", id), { active: newActive });
+
+        // Update badge
+        const badge = rowEl.querySelector(".status-badge");
+        badge.className = `badge status-badge ${newActive ? 'bg-success' : 'bg-danger'} me-2`;
+        badge.textContent = newActive ? 'Active' : 'Inactive';
+
+        // Update button
+        btn.className = `btn btn-sm ${newActive ? 'btn-outline-warning' : 'btn-outline-success'} toggle-status-btn me-1`;
+        btn.innerHTML = `<i class="fa-solid ${newActive ? 'fa-ban' : 'fa-check-circle'} me-1"></i>${newActive ? 'Deactivate' : 'Activate'}`;
+        btn.title = newActive ? 'Deactivate' : 'Activate';
+        btn.disabled = false;
+
+        // Re-bind with flipped state
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        newBtn.addEventListener("click", () => toggleInstitutionStatus(id, newActive, rowEl));
+
+        Toast.success(`Institution ${newActive ? 'activated' : 'deactivated'} successfully.`);
+    } catch (err) {
+        console.error("Toggle status error:", err);
+        Toast.error(`Failed to ${action} institution.`);
+        btn.disabled = false;
+        btn.innerHTML = orig;
     }
 }
 
