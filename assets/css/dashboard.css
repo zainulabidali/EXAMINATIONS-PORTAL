@@ -97,3 +97,181 @@ body {
         margin-bottom: 0.5rem;
     }
 }
+
+/* ==============================================
+   MARKS ENTRY — Auto-save Status Bar
+   ============================================== */
+.marks-status-bar {
+    display: flex;
+    align-items: center;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    width: fit-content;
+    gap: 0.25rem;
+    transition: background 0.3s ease, color 0.3s ease;
+    letter-spacing: 0.2px;
+}
+
+.marks-status-bar.status-saving {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
+}
+
+.marks-status-bar.status-saved {
+    background: #d1f5ea;
+    color: #0a6e47;
+    border: 1px solid #06d6a0;
+    animation: pulse-green 0.5s ease;
+}
+
+.marks-status-bar.status-unsaved {
+    background: #fff0f3;
+    color: #c0214a;
+    border: 1px solid #f78ba7;
+}
+
+@keyframes pulse-green {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.03);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* ==============================================
+   MARKS ENTRY — Table Styles
+   ============================================== */
+.marks-table-wrapper {
+    max-height: 70vh;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+
+.marks-entry-table .marks-thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #4a5568;
+    font-weight: 700;
+    padding: 0.85rem 0.75rem;
+    white-space: nowrap;
+}
+
+.marks-entry-table .marks-thead th.subject-col {
+    border-left: 1px solid #e9ecef;
+}
+
+.marks-entry-table tbody tr {
+    transition: background 0.15s ease;
+}
+
+.marks-entry-table tbody tr:hover {
+    background: #f0f4ff !important;
+}
+
+.marks-entry-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.marks-cell-input {
+    border-radius: 8px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    font-size: 0.875rem !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.marks-cell-input:focus {
+    border-color: #4361ee !important;
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.12) !important;
+}
+
+/* ==============================================
+   PUBLISH RESULTS — Status Badges
+   ============================================== */
+.publish-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.4rem 0.85rem;
+    border-radius: 30px;
+    letter-spacing: 0.3px;
+}
+
+.badge-published {
+    background: #d1f5ea;
+    color: #0a6e47;
+    border: 1.5px solid #06d6a0;
+}
+
+.badge-unpublished {
+    background: #fff3e0;
+    color: #92400e;
+    border: 1.5px solid #fbbf24;
+}
+
+.disabled-publish-btn {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* ==============================================
+   SUBJECT CARDS — Action Buttons
+   ============================================== */
+.subject-card:hover .btn-edit-sub,
+.subject-card:hover .btn-delete-sub {
+    opacity: 1;
+}
+
+.btn-edit-sub,
+.btn-delete-sub {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.8rem;
+    border-radius: 7px;
+    transition: all 0.18s ease;
+}
+
+/* ==============================================
+   SECTION CARDS — Global Hover Polish
+   ============================================== */
+.class-folder-card:hover {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.09) !important;
+}
+
+/* Students table enhanced rows */
+#studentsTable tbody tr:hover {
+    background: #f0f4ff;
+}
+
+/* Sidebar active tab polish */
+#sidebar-wrapper .list-group-item.active {
+    background: linear-gradient(135deg, rgba(67, 97, 238, .08), rgba(67, 97, 238, .04)) !important;
+    border-left: 3px solid #4361ee !important;
+    border-radius: 0 !important;
+}
+
+/* Card header consistent padding */
+.card-header.py-3 {
+    min-height: 60px;
+}
+
+/* Publish tab info alert */
+.alert-info.border-0 {
+    border-radius: 12px;
+    background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+}

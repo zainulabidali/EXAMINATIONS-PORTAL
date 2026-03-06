@@ -1,20 +1,52 @@
 /**
  * Result Search Logic
+ * Validates → Finds Student → Checks Published Result → Redirects
  */
 
 import { db } from "./firebase-init.js";
-import { collection, getDocs } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
-import { Toast } from "./toast-service.js";
-
-const institutionSelect = document.getElementById("institutionSelect");
-const searchForm = document.getElementById("resultSearchForm");
+import {
+    collection,
+    getDocs,
+    query,
+    where
+} from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
 
 /* =========================
-   Initialize
+   DOM References
+========================= */
+const institutionSelect = document.getElementById("institutionSelect");
+const classIdInput = document.getElementById("classId");
+const registerNoInput = document.getElementById("registerNo");
+const searchForm = document.getElementById("resultSearchForm");
+const searchBtn = document.getElementById("searchBtn");
+const msgBox = document.getElementById("searchMessage");
+
+/* =========================
+   Helpers
 ========================= */
 
-async function init() {
-    await loadInstitutions();
+function showMessage(text, type = "danger") {
+    msgBox.innerHTML = `
+        <div class="alert alert-${type} d-flex align-items-center gap-2 mb-0 animate-fade-in" role="alert">
+            <i class="fa-solid ${type === "danger" ? "fa-circle-exclamation" : "fa-circle-check"}"></i>
+            <span>${text}</span>
+        </div>`;
+    msgBox.classList.remove("d-none");
+}
+
+function clearMessage() {
+    msgBox.innerHTML = "";
+    msgBox.classList.add("d-none");
+}
+
+function setLoading(isLoading) {
+    if (isLoading) {
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Searching...`;
+    } else {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = `<i class="fa-solid fa-search me-2"></i>Search Result`;
+    }
 }
 
 /* =========================
@@ -23,54 +55,107 @@ async function init() {
 
 async function loadInstitutions() {
     try {
-        const querySnapshot = await getDocs(collection(db, "institutions"));
+        const snap = await getDocs(collection(db, "institutions"));
 
-        if (querySnapshot.empty) {
-            console.warn("No institutions found.");
+        if (snap.empty) {
+            institutionSelect.innerHTML = `<option value="" disabled selected>No institutions found</option>`;
             return;
         }
 
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const option = document.createElement("option");
-            option.value = doc.id;
-            option.textContent = data.name;
-            institutionSelect.appendChild(option);
+        snap.forEach((docSnap) => {
+            const opt = document.createElement("option");
+            opt.value = docSnap.id;
+            opt.textContent = docSnap.data().name || docSnap.id;
+            institutionSelect.appendChild(opt);
         });
-
-    } catch (error) {
-        console.error("Error loading institutions:", error);
-        Toast.error("Failed to load institutions. Please refresh.");
+    } catch (err) {
+        console.error("Error loading institutions:", err);
+        showMessage("Could not load institutions. Please refresh the page.", "danger");
     }
 }
 
 /* =========================
-   Handle Search
+   Handle Search Submit
 ========================= */
 
 if (searchForm) {
-    searchForm.addEventListener("submit", (e) => {
+    searchForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+        clearMessage();
 
-        const institutionId = institutionSelect.value;
-        const classId = document.getElementById("classId").value.trim();
-        const registerNo = document.getElementById("registerNo").value.trim();
+        const institutionId = institutionSelect.value.trim();
+        const classId = classIdInput.value.trim();
+        const registerNo = registerNoInput.value.trim();
 
+        /* --- Step 1: Validate Inputs --- */
         if (!institutionId || !classId || !registerNo) {
-            Toast.error("Please fill in all fields.");
+            showMessage("Please fill in all required fields.", "danger");
             return;
         }
 
-        // Redirect to Result View with params
-        const params = new URLSearchParams({
-            inst: institutionId,
-            class: classId,
-            reg: registerNo
-        });
+        setLoading(true);
 
-        window.location.href = `result-view.html?${params.toString()}`;
+        try {
+            /* --- Step 2: Find the Student --- */
+            const studentQuery = query(
+                collection(db, "students"),
+                where("institutionId", "==", institutionId),
+                where("classId", "==", classId),
+                where("registerNo", "==", registerNo)
+            );
+
+            const studentSnap = await getDocs(studentQuery);
+
+            if (studentSnap.empty) {
+                showMessage(
+                    "Student record not found. Please double-check your Class and Register Number.",
+                    "danger"
+                );
+                setLoading(false);
+                return;
+            }
+
+            const studentId = studentSnap.docs[0].id;
+
+            /* --- Step 3: Check Published Result --- */
+            const resultQuery = query(
+                collection(db, "results"),
+                where("institutionId", "==", institutionId),
+                where("studentId", "==", studentId),
+                where("published", "==", true)
+            );
+
+            const resultSnap = await getDocs(resultQuery);
+
+            if (resultSnap.empty) {
+                showMessage(
+                    "Result has not been published yet. Please check back later.",
+                    "warning"
+                );
+                setLoading(false);
+                return;
+            }
+
+            /* --- Step 4: Redirect to Result View --- */
+            const params = new URLSearchParams({
+                studentId,
+                inst: institutionId
+            });
+
+            window.location.href = `result-view.html?${params.toString()}`;
+
+        } catch (err) {
+            console.error("Search error:", err);
+            showMessage(
+                "A network error occurred. Please check your connection and try again.",
+                "danger"
+            );
+            setLoading(false);
+        }
     });
 }
 
-// Run Init
-init();
+/* =========================
+   Init
+========================= */
+loadInstitutions();
