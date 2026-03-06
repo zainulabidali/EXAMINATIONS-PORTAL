@@ -559,11 +559,16 @@
             const tbody = document.getElementById('marksTableBody');
             tbody.innerHTML = '';
 
+            // Safely convert subjects: supports both object maps and arrays
+            const subjectsArray = Array.isArray(subjects)
+                ? subjects
+                : Object.values(subjects || {});
+
             let totalMax = 0;
             let totalObtained = 0;
             let hasFail = false;
 
-            if (!subjects.length) {
+            if (!subjectsArray.length) {
                 tbody.innerHTML = `
                 <tr>
                     <td colspan="5" class="text-center text-muted py-4">
@@ -572,7 +577,7 @@
                 </tr>`;
             }
 
-            subjects.forEach(sub => {
+            subjectsArray.forEach(sub => {
                 const obtained = Number(sub.obtained) || 0;
                 const maxMarks = Number(sub.maxMarks) || 0;
                 const minPass = Number(sub.minPass) || 0;
