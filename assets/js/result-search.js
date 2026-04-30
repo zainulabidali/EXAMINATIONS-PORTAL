@@ -53,6 +53,27 @@ function setLoading(isLoading) {
    Load Institutions
 ========================= */
 
+/* =========================
+   Validity Helper (mirrors super-admin.js logic — no shared module needed)
+   Backward compatible: institutes without date fields use the `active` flag only.
+========================= */
+function isInstitutionAccessible(data) {
+    const manualActive = data.active !== false; // missing field → treated as active
+    if (!manualActive) return false;            // manually deactivated → always hidden
+
+    const hasFrom  = !!data.valid_from;
+    const hasUntil = !!data.valid_until;
+    if (!hasFrom && !hasUntil) return true;     // no date range → old behaviour, just use active flag
+
+    const now   = new Date(); now.setHours(0, 0, 0, 0);
+    const from  = hasFrom  ? new Date(data.valid_from)  : null;
+    const until = hasUntil ? new Date(data.valid_until) : null;
+
+    const afterFrom   = !from  || now >= from;
+    const beforeUntil = !until || now <= until;
+    return afterFrom && beforeUntil;
+}
+
 async function loadInstitutions() {
     try {
         const snap = await getDocs(collection(db, "institutions"));
@@ -62,12 +83,22 @@ async function loadInstitutions() {
             return;
         }
 
+        let added = 0;
         snap.forEach((docSnap) => {
+            const data = docSnap.data();
+            // Only show institutions that are active and within their validity window
+            if (!isInstitutionAccessible(data)) return;
+
             const opt = document.createElement("option");
             opt.value = docSnap.id;
-            opt.textContent = docSnap.data().name || docSnap.id;
+            opt.textContent = data.name || docSnap.id;
             institutionSelect.appendChild(opt);
+            added++;
         });
+
+        if (added === 0) {
+            institutionSelect.innerHTML = `<option value="" disabled selected>No active institutions available</option>`;
+        }
     } catch (err) {
         console.error("Error loading institutions:", err);
         showMessage("Could not load institutions. Please refresh the page.", "danger");

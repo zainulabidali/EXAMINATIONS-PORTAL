@@ -80,6 +80,7 @@ function initApp() {
     loadSubjectFolders();
     loadMarksFolders();
     loadPublishFolders();
+    renderPublicLinkCard(); // Feature 2: scoped public result link
 }
 
 /* ============================================================
@@ -962,6 +963,9 @@ async function autoSaveMarks() {
         Object.entries(studentData).forEach(([sid, data]) => {
             const safeExam = examType.replace(/\s+/g, "_");
             const ref = doc(db, "results", `${sid}_${year}_${safeExam}`);
+            // attendance: store numeric or null; old "Present"/"Absent" strings are no longer written
+            const attVal = (data.attendance !== undefined && data.attendance !== null && data.attendance !== '')
+                ? Number(data.attendance) : null;
             batch.set(ref, {
                 institutionId: currentInstitutionId,
                 studentId: sid,
@@ -969,7 +973,7 @@ async function autoSaveMarks() {
                 academicYear: year,
                 examType,
                 subjects: data.subjects,
-                attendance: data.attendance || "Present",
+                attendance: attVal,
                 rank: data.rank ?? null,
                 published: false
             }, { merge: true });
@@ -1041,7 +1045,7 @@ async function openMarksEntry(classId) {
         const thAtt = document.createElement("th");
         thAtt.className = "text-center";
         thAtt.style.minWidth = "140px";
-        thAtt.innerHTML = `<span class="fw-semibold">Attendance</span><br><small class="text-muted fw-normal fst-italic">Optional</small>`;
+        thAtt.innerHTML = `<span class="fw-semibold">Attendance Count</span><br><small class="text-muted fw-normal fst-italic">Optional – numeric</small>`;
         thead.appendChild(thAtt);
 
         // Rank header
@@ -1088,13 +1092,17 @@ async function openMarksEntry(classId) {
                     </td>`;
             });
 
-            const savedAtt = saved.attendance || "Present";
+            // Gracefully handle old string values ("Present"/"Absent") — show blank in numeric field
+            const savedAtt = saved.attendance;
+            const attDisplay = (typeof savedAtt === 'number' || (typeof savedAtt === 'string' && savedAtt !== '' && savedAtt !== 'Present' && savedAtt !== 'Absent'))
+                ? savedAtt : '';
             html += `
                 <td class="align-middle">
-                    <select class="form-select form-select-sm mark-attendance marks-cell-input" data-student="${stu.id}">
-                        <option value="Present"${savedAtt === "Present" ? " selected" : ""}>Present</option>
-                        <option value="Absent"${savedAtt === "Absent" ? " selected" : ""}>Absent</option>
-                    </select>
+                    <input type="number" min="0"
+                        class="form-control form-control-sm text-center mark-attendance marks-cell-input"
+                        data-student="${stu.id}"
+                        value="${attDisplay}"
+                        placeholder="—">
                 </td>`;
 
             const savedRank = saved.rank ?? "";
@@ -1118,8 +1126,8 @@ async function openMarksEntry(classId) {
                 if (!confirm(`Clear all marks for ${stu.name}?`)) return;
                 tr.querySelectorAll(".mark-input").forEach(inp => inp.value = "");
                 tr.querySelectorAll(".mark-rank").forEach(inp => inp.value = "");
-                const attSel = tr.querySelector(".mark-attendance");
-                if (attSel) attSel.value = "Present";
+                const attInp = tr.querySelector(".mark-attendance");
+                if (attInp) attInp.value = "";
                 scheduleAutoSave();
             });
 
@@ -1208,6 +1216,8 @@ async function saveAllMarks() {
         Object.entries(studentData).forEach(([sid, data]) => {
             const safeExam = examType.replace(/\s+/g, "_");
             const ref = doc(db, "results", `${sid}_${year}_${safeExam}`);
+            const attVal = (data.attendance !== undefined && data.attendance !== null && data.attendance !== '')
+                ? Number(data.attendance) : null;
             batch.set(ref, {
                 institutionId: currentInstitutionId,
                 studentId: sid,
@@ -1215,7 +1225,7 @@ async function saveAllMarks() {
                 academicYear: year,
                 examType,
                 subjects: data.subjects,
-                attendance: data.attendance || "Present",
+                attendance: attVal,
                 rank: data.rank ?? null,
                 published: false
             }, { merge: true });
@@ -1469,6 +1479,81 @@ async function publishClass(classId) {
             btn.innerHTML = '<i class="fa-solid fa-check-double me-2"></i> Publish All Classes';
         }
     }
+}
+
+/* ============================================================
+   PUBLIC RESULT LINK — Feature 2
+   Renders a styled card in the Publish tab showing the scoped
+   public URL for this institution. No login required to view.
+   Security: result.html reads only from inst={id} scope.
+   ============================================================ */
+function renderPublicLinkCard() {
+    const container = document.getElementById("publicLinkCard");
+    if (!container || !currentInstitutionId) return;
+
+    // Build the scoped URL: same origin, result.html?inst=<id>
+    const base = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, "/");
+    const publicUrl = `${base}result.html?inst=${currentInstitutionId}`;
+
+    container.innerHTML = `
+        <div class="card border-0 shadow-sm" style="border-radius:16px;overflow:hidden;">
+            <div style="height:4px;background:linear-gradient(90deg,#4361ee,#4cc9f0);"></div>
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-primary bg-opacity-10 p-2 rounded-circle me-3">
+                        <i class="fa-solid fa-link text-primary"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">Public Result Link</h6>
+                        <p class="mb-0 text-muted small">Share this link with students — no login required</p>
+                    </div>
+                </div>
+
+                <div class="input-group mb-3" style="border-radius:10px;overflow:hidden;">
+                    <input type="text" id="publicResultUrlInput"
+                        class="form-control form-control-sm border-0 bg-light font-monospace"
+                        value="${publicUrl}" readonly
+                        style="font-size:.82rem;border-radius:10px 0 0 10px !important;">
+                    <button class="btn btn-primary btn-sm px-3" id="copyPublicLinkBtn" title="Copy link">
+                        <i class="fa-solid fa-copy me-1"></i> Copy
+                    </button>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <a id="whatsappShareBtn"
+                        href="https://wa.me/?text=${encodeURIComponent('📢 View your result here:\n' + publicUrl)}"
+                        target="_blank" rel="noopener"
+                        class="btn btn-sm btn-success px-3">
+                        <i class="fa-brands fa-whatsapp me-1"></i> Share on WhatsApp
+                    </a>
+                    <a href="${publicUrl}" target="_blank" rel="noopener"
+                        class="btn btn-sm btn-outline-primary px-3">
+                        <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Preview Link
+                    </a>
+                </div>
+            </div>
+        </div>`;
+
+    // Copy button handler
+    document.getElementById("copyPublicLinkBtn").addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(publicUrl);
+            const btn = document.getElementById("copyPublicLinkBtn");
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Copied!';
+            btn.classList.replace('btn-primary', 'btn-success');
+            setTimeout(() => {
+                btn.innerHTML = orig;
+                btn.classList.replace('btn-success', 'btn-primary');
+            }, 2000);
+        } catch {
+            // Fallback for browsers that block clipboard API
+            const inp = document.getElementById("publicResultUrlInput");
+            inp.select();
+            document.execCommand('copy');
+            Toast.success('Link copied!');
+        }
+    });
 }
 
 /* ============================================================

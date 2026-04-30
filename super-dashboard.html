@@ -95,6 +95,26 @@
                                         <input type="password" id="adminPassword" class="form-control"
                                             placeholder="Min. 6 chars" required>
                                     </div>
+
+                                    <!-- Validity Date Range (optional) -->
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-muted">
+                                            <i class="fa-solid fa-calendar-check me-1 text-success"></i>
+                                            Valid From <span class="text-muted fw-normal">(optional)</span>
+                                        </label>
+                                        <input type="date" id="validFrom" class="form-control">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-muted">
+                                            <i class="fa-solid fa-calendar-xmark me-1 text-danger"></i>
+                                            Valid Until <span class="text-muted fw-normal">(optional)</span>
+                                        </label>
+                                        <input type="date" id="validUntil" class="form-control">
+                                        <div class="form-text text-muted">
+                                            Leave blank to keep using the manual Active/Inactive toggle.
+                                        </div>
+                                    </div>
+
                                     <button type="submit" class="btn btn-primary w-100 fw-bold">
                                         <i class="fa-solid fa-check me-2"></i> Create Institution
                                     </button>
@@ -119,6 +139,7 @@
                                                 <th class="ps-4">Name</th>
                                                 <th>Admin Email</th>
                                                 <th>Created At</th>
+                                                <th>Validity</th>
                                                 <th>Status</th>
                                                 <th class="text-end pe-4">Actions</th>
                                             </tr>

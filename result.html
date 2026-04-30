@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Result Portal</title>
+    <meta name="description" content="View your academic result. Enter your class and register number to get started.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* ── Hero ── */
+        .inst-hero {
+            background: linear-gradient(135deg, #4361ee 0%, #3f37c9 50%, #4cc9f0 100%);
+            padding: 4rem 0 6.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .inst-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .inst-name-heading {
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.5px;
+            line-height: 1.15;
+        }
+        .inst-sub {
+            color: rgba(255,255,255,0.82);
+            font-size: 1.05rem;
+        }
+
+        /* ── Floating Card ── */
+        .search-card-wrapper { margin-top: -4rem; }
+        .search-card {
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(67,97,238,0.15);
+            overflow: hidden;
+        }
+        .search-card .card-header-strip {
+            background: linear-gradient(90deg, #4361ee, #4cc9f0);
+            height: 5px;
+        }
+
+        /* ── Form ── */
+        .search-form .form-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6c757d;
+            margin-bottom: 0.4rem;
+        }
+        .search-form .form-control {
+            border-radius: 12px;
+            border: 2px solid #e9ecef;
+            padding: 0.85rem 1.1rem;
+            font-size: 1rem;
+            background-color: #f8f9fa;
+            transition: border-color .2s, box-shadow .2s, background-color .2s;
+        }
+        .search-form .form-control:focus {
+            border-color: #4361ee;
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(67,97,238,.12);
+        }
+
+        /* ── Search Button ── */
+        #searchBtn {
+            background: linear-gradient(135deg, #4361ee, #3f37c9);
+            border: none;
+            border-radius: 50px;
+            padding: 1rem 2.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            box-shadow: 0 8px 24px rgba(67,97,238,.35);
+            transition: transform .2s, box-shadow .2s;
+        }
+        #searchBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(67,97,238,.45);
+        }
+        #searchBtn:disabled { opacity: .7; cursor: not-allowed; }
+
+        /* ── Error Page ── */
+        .error-page {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .error-box {
+            background: #fff;
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,.08);
+            max-width: 440px;
+        }
+
+        /* ── Loading skeleton ── */
+        #instNameSkeleton {
+            width: 240px;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.25);
+            animation: shimmer 1.4s infinite;
+            margin: 0 auto;
+        }
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.5; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="fa-solid fa-graduation-cap me-2"></i>Result Portal
+            </a>
+            <div class="d-flex">
+                <a href="login.html" class="btn btn-light btn-sm fw-bold">
+                    <i class="fa-solid fa-lock me-1"></i> Admin Login
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Invalid-inst error (hidden by default, shown by JS) -->
+    <div id="invalidPage" class="d-none error-page">
+        <div class="error-box animate-fade-in">
+            <div class="mb-3">
+                <i class="fa-solid fa-triangle-exclamation fa-3x text-warning"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Invalid Link</h5>
+            <p class="text-muted mb-4">This result link is invalid or the institution is no longer active.</p>
+            <a href="index.html" class="btn btn-primary rounded-pill px-4">
+                <i class="fa-solid fa-search me-1"></i> Search Portal
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content (shown after institution loads) -->
+    <div id="mainContent">
+
+        <!-- Hero with Institute Name -->
+        <section class="inst-hero">
+            <div class="container text-center">
+                <div class="d-inline-flex align-items-center bg-white bg-opacity-10 rounded-pill px-3 py-1 mb-4 text-white small fw-semibold">
+                    <i class="fa-solid fa-circle-dot me-2 text-warning"></i> Live Result Access
+                </div>
+                <!-- Skeleton shown while loading, replaced with real name -->
+                <div id="instNameSkeleton" class="mb-3"></div>
+                <h1 id="instNameHeading" class="inst-name-heading mb-3 d-none"></h1>
+                <p class="inst-sub mx-auto" style="max-width:480px;">
+                    Enter your class and register number below to view your result.
+                </p>
+            </div>
+        </section>
+
+        <!-- Floating Search Card -->
+        <div class="container search-card-wrapper">
+            <div class="row justify-content-center">
+                <div class="col-lg-9 col-xl-8">
+                    <div class="search-card animate-fade-in">
+                        <div class="card-header-strip"></div>
+                        <div class="p-4 p-md-5">
+
+                            <!-- Message Box -->
+                            <div id="searchMessage" class="d-none mb-4"></div>
+
+                            <form id="resultSearchForm" class="search-form" novalidate>
+                                <div class="row g-4">
+
+                                    <!-- Class -->
+                                    <div class="col-md-6">
+                                        <label for="classId" class="form-label">
+                                            <i class="fa-solid fa-chalkboard-user me-1"></i> Class / Grade
+                                        </label>
+                                        <input type="text" id="classId" class="form-control"
+                                            placeholder="e.g. 10-A, B.Tech CS" required autocomplete="off">
+                                    </div>
+
+                                    <!-- Register Number -->
+                                    <div class="col-md-6">
+                                        <label for="registerNo" class="form-label">
+                                            <i class="fa-solid fa-id-card me-1"></i> Register Number
+                                        </label>
+                                        <input type="text" id="registerNo" class="form-control"
+                                            placeholder="e.g. REG123456" required autocomplete="off">
+                                    </div>
+
+                                </div>
+
+                                <div class="mt-5 text-center">
+                                    <button type="submit" id="searchBtn" class="btn w-100" style="max-width:400px;">
+                                        <i class="fa-solid fa-search me-2"></i>View My Result
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Class List Section -->
+        <div class="container mt-5 pt-3">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold text-dark m-0">Available Classes</h4>
+                <div class="spinner-border spinner-border-sm text-primary d-none" id="classesLoader" role="status"></div>
+            </div>
+            <div class="row g-3" id="publicClassList">
+                <!-- Class cards populated by JS -->
+            </div>
+            <div id="publicClassEmpty" class="text-center py-5 d-none text-muted">
+                <i class="fa-solid fa-folder-open fa-2x mb-3 opacity-50"></i>
+                <p>No classes found for this institution.</p>
+            </div>
+        </div>
+
+        <div class="py-5"></div>
+
+    </div><!-- /mainContent -->
+
+    <!-- Student List Modal -->
+    <div class="modal fade" id="studentListModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg">
+            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                <div class="modal-header bg-light border-bottom-0" style="border-radius: 16px 16px 0 0;">
+                    <div>
+                        <h5 class="modal-title fw-bold text-dark mb-1" id="studentListModalTitle">Class Students</h5>
+                        <p class="mb-0 text-muted small" id="studentListModalCount">0 students</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="bg-light p-3 border-bottom sticky-top" style="z-index: 10;">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0 text-muted">
+                                <i class="fa-solid fa-search"></i>
+                            </span>
+                            <input type="text" id="liveSearchInput" class="form-control border-start-0 ps-0 form-control-lg fs-6" 
+                                placeholder="Search by Student Name or Register Number..." autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="list-group list-group-flush" id="modalStudentList">
+                        <!-- Student items populated by JS -->
+                    </div>
+                    <div id="modalStudentEmpty" class="text-center py-5 d-none text-muted">
+                        <p class="mb-0">No matching students found.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 mt-auto text-muted small">
+        &copy; <span id="year"></span> Result Portal. All rights reserved.
+    </footer>
+
+    <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="assets/js/firebase-init.js"></script>
+    <script type="module">
+        import { db } from "./assets/js/firebase-init.js";
+        import {
+            doc, getDoc, collection, query, where, getDocs
+        } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+        /* ── Helpers ── */
+        const params    = new URLSearchParams(window.location.search);
+        const instId    = params.get('inst');
+        const msgBox    = document.getElementById('searchMessage');
+        const searchBtn = document.getElementById('searchBtn');
+
+        function showMessage(text, type = 'danger') {
+            msgBox.innerHTML = `
+                <div class="alert alert-${type} d-flex align-items-center gap-2 mb-0 animate-fade-in" role="alert">
+                    <i class="fa-solid ${type === 'danger' ? 'fa-circle-exclamation' : type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-check'}"></i>
+                    <span>${text}</span>
+                </div>`;
+            msgBox.classList.remove('d-none');
+        }
+
+        function clearMessage() {
+            msgBox.innerHTML = '';
+            msgBox.classList.add('d-none');
+        }
+
+        function setLoading(on) {
+            searchBtn.disabled = on;
+            searchBtn.innerHTML = on
+                ? '<span class="spinner-border spinner-border-sm me-2"></span>Searching...'
+                : '<i class="fa-solid fa-search me-2"></i>View My Result';
+        }
+
+        /* ── Validity check (mirrors super-admin.js) ── */
+        function isInstitutionAccessible(data) {
+            const manualActive = data.active !== false;
+            if (!manualActive) return false;
+            const hasFrom  = !!data.valid_from;
+            const hasUntil = !!data.valid_until;
+            if (!hasFrom && !hasUntil) return true;
+            const now   = new Date(); now.setHours(0, 0, 0, 0);
+            const from  = hasFrom  ? new Date(data.valid_from)  : null;
+            const until = hasUntil ? new Date(data.valid_until) : null;
+            return (!from || now >= from) && (!until || now <= until);
+        }
+
+        /* ── Load Classes & Students ── */
+        let classDataMap = {}; // { "10-A": [student1, student2] }
+
+        async function loadClasses() {
+            const loader = document.getElementById('classesLoader');
+            loader.classList.remove('d-none');
+            try {
+                // Fetch all students for this institution to group by class
+                const q = query(collection(db, 'students'), where('institutionId', '==', instId));
+                const snap = await getDocs(q);
+                
+                classDataMap = {};
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (!classDataMap[data.classId]) {
+                        classDataMap[data.classId] = [];
+                    }
+                    classDataMap[data.classId].push(data);
+                });
+
+                renderClassCards();
+            } catch (err) {
+                console.error("Error loading classes:", err);
+            } finally {
+                loader.classList.add('d-none');
+            }
+        }
+
+        function renderClassCards() {
+            const listArea = document.getElementById('publicClassList');
+            const emptyState = document.getElementById('publicClassEmpty');
+            listArea.innerHTML = '';
+
+            const classes = Object.keys(classDataMap).sort();
+
+            if (classes.length === 0) {
+                emptyState.classList.remove('d-none');
+                return;
+            }
+            emptyState.classList.add('d-none');
+
+            classes.forEach(cls => {
+                const students = classDataMap[cls];
+                const col = document.createElement('div');
+                col.className = 'col-6 col-md-4 col-lg-3';
+                col.innerHTML = `
+                    <div class="card h-100 border-0 shadow-sm text-center p-4 class-card" style="border-radius: 16px; cursor: pointer; transition: transform .2s, box-shadow .2s;">
+                        <i class="fa-solid fa-folder-open fa-2x text-primary mb-3"></i>
+                        <h6 class="fw-bold mb-1 text-dark">${cls}</h6>
+                        <span class="badge bg-primary bg-opacity-10 text-primary border-0">${students.length} Student${students.length !== 1 ? 's' : ''}</span>
+                    </div>
+                `;
+                
+                const card = col.querySelector('.class-card');
+                card.addEventListener('mouseenter', () => { card.style.transform = "translateY(-4px)"; card.style.boxShadow = "0 12px 24px rgba(67,97,238,0.15)"; });
+                card.addEventListener('mouseleave', () => { card.style.transform = ""; card.style.boxShadow = ""; });
+                card.addEventListener('click', () => openStudentModal(cls, students));
+
+                listArea.appendChild(col);
+            });
+        }
+
+        /* ── Student Modal & Live Search ── */
+        let currentModalStudents = [];
+        const studentListModal = new bootstrap.Modal(document.getElementById('studentListModal'));
+
+        function openStudentModal(className, students) {
+            document.getElementById('studentListModalTitle').textContent = `Class: ${className}`;
+            document.getElementById('studentListModalCount').textContent = `${students.length} Student${students.length !== 1 ? 's' : ''}`;
+            
+            // Sort students by register number
+            currentModalStudents = [...students].sort((a, b) => (a.registerNo || "").localeCompare(b.registerNo || ""));
+            
+            document.getElementById('liveSearchInput').value = '';
+            renderModalStudents(currentModalStudents, className);
+            
+            studentListModal.show();
+            setTimeout(() => document.getElementById('liveSearchInput').focus(), 400);
+        }
+
+        function renderModalStudents(students, className) {
+            const listArea = document.getElementById('modalStudentList');
+            const emptyState = document.getElementById('modalStudentEmpty');
+            listArea.innerHTML = '';
+
+            if (students.length === 0) {
+                emptyState.classList.remove('d-none');
+                return;
+            }
+            emptyState.classList.add('d-none');
+
+            students.forEach(student => {
+                const item = document.createElement('button');
+                item.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3 px-4 student-item';
+                item.innerHTML = `
+                    <div>
+                        <h6 class="mb-1 fw-bold text-dark stu-name">${escapeHtml(student.name)}</h6>
+                        <span class="font-monospace text-muted small stu-reg">${escapeHtml(student.registerNo)}</span>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-black-50 small"></i>
+                `;
+                
+                // Clicking a student auto-fills the search form and submits
+                item.addEventListener('click', () => {
+                    studentListModal.hide();
+                    document.getElementById('classId').value = student.classId || className;
+                    document.getElementById('registerNo').value = student.registerNo;
+                    // Automatically scroll up and trigger search
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setTimeout(() => {
+                        document.getElementById('searchBtn').click();
+                    }, 400);
+                });
+
+                listArea.appendChild(item);
+            });
+        }
+
+        document.getElementById('liveSearchInput').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = currentModalStudents.filter(s => 
+                (s.name || "").toLowerCase().includes(term) || 
+                (s.registerNo || "").toLowerCase().includes(term)
+            );
+            
+            // Re-render list with filtered students
+            renderModalStudents(filtered, document.getElementById('studentListModalTitle').textContent.replace('Class: ', ''));
+        });
+
+        function escapeHtml(str) {
+            return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+        }
+
+        /* ── Boot: validate institution ── */
+        async function boot() {
+            if (!instId) {
+                document.getElementById('mainContent').classList.add('d-none');
+                document.getElementById('invalidPage').classList.remove('d-none');
+                return;
+            }
+
+            try {
+                const instSnap = await getDoc(doc(db, 'institutions', instId));
+
+                if (!instSnap.exists() || !isInstitutionAccessible(instSnap.data())) {
+                    document.getElementById('mainContent').classList.add('d-none');
+                    document.getElementById('invalidPage').classList.remove('d-none');
+                    return;
+                }
+
+                const instName = instSnap.data().name || 'Result Portal';
+
+                // Update page title & hero heading
+                document.title = `${instName} | Result Portal`;
+                document.querySelector('meta[name="description"]').content =
+                    `Check your results for ${instName}. Enter your class and register number.`;
+
+                document.getElementById('instNameSkeleton').classList.add('d-none');
+                const heading = document.getElementById('instNameHeading');
+                heading.textContent = instName;
+                heading.classList.remove('d-none');
+
+                // Load classes in the background
+                loadClasses();
+
+            } catch (err) {
+                console.error('Boot error:', err);
+                document.getElementById('mainContent').classList.add('d-none');
+                document.getElementById('invalidPage').classList.remove('d-none');
+            }
+        }
+
+        /* ── Search Submit ── */
+        document.getElementById('resultSearchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessage();
+
+            const classId    = document.getElementById('classId').value.trim();
+            const registerNo = document.getElementById('registerNo').value.trim();
+
+            if (!classId || !registerNo) {
+                showMessage('Please fill in both fields.', 'danger');
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                /* Step 1 — Find student, scoped to THIS institution only */
+                const stuQuery = query(
+                    collection(db, 'students'),
+                    where('institutionId', '==', instId),   // ← scope enforced here
+                    where('classId', '==', classId),
+                    where('registerNo', '==', registerNo)
+                );
+                const stuSnap = await getDocs(stuQuery);
+
+                if (stuSnap.empty) {
+                    showMessage('Student record not found. Please check your Class and Register Number.', 'danger');
+                    setLoading(false);
+                    return;
+                }
+
+                const studentId = stuSnap.docs[0].id;
+
+                /* Step 2 — Check published result, scoped to THIS institution only */
+                const resQuery = query(
+                    collection(db, 'results'),
+                    where('institutionId', '==', instId),   // ← scope enforced here
+                    where('studentId', '==', studentId),
+                    where('published', '==', true)
+                );
+                const resSnap = await getDocs(resQuery);
+
+                if (resSnap.empty) {
+                    showMessage('Result has not been published yet. Please check back later.', 'warning');
+                    setLoading(false);
+                    return;
+                }
+
+                /* Step 3 — Redirect to existing result-view.html with scoped params */
+                const p = new URLSearchParams({ studentId, inst: instId });
+                window.location.href = `result-view.html?${p.toString()}`;
+
+            } catch (err) {
+                console.error('Search error:', err);
+                showMessage('A network error occurred. Please check your connection and try again.', 'danger');
+                setLoading(false);
+            }
+        });
+
+        boot();
+    </script>
+
+</body>
+</html>

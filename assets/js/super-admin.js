@@ -47,13 +47,45 @@ async function init() {
    Create Institution (Complex Flow)
 ========================= */
 
+/* =========================
+   Validity Helper
+   Extends existing active logic — fully backward compatible.
+   - If valid_from / valid_until are absent → fall back to `active` flag (old behaviour).
+   - If dates are present → institute is active only within the date range.
+========================= */
+function computeEffectiveActive(data) {
+    const manualActive = data.active !== false; // old field, treat missing as true
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // compare at day boundary
+
+    const hasFrom  = !!data.valid_from;
+    const hasUntil = !!data.valid_until;
+
+    if (!hasFrom && !hasUntil) {
+        // No date range set — use old manual toggle
+        return { effective: manualActive, expired: false };
+    }
+
+    const from  = hasFrom  ? new Date(data.valid_from)  : null;
+    const until = hasUntil ? new Date(data.valid_until) : null;
+
+    const afterFrom  = !from  || now >= from;
+    const beforeUntil = !until || now <= until;
+    const inRange = afterFrom && beforeUntil;
+    const expired = hasUntil && now > until;
+
+    return { effective: inRange && manualActive, expired };
+}
+
 if (instForm) {
     instForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const name = document.getElementById("institutionName").value.trim();
-        const email = document.getElementById("adminEmail").value.trim();
+        const name     = document.getElementById("institutionName").value.trim();
+        const email    = document.getElementById("adminEmail").value.trim();
         const password = document.getElementById("adminPassword").value.trim();
+        const validFrom  = document.getElementById("validFrom")?.value  || null;
+        const validUntil = document.getElementById("validUntil")?.value || null;
         const btn = instForm.querySelector("button");
 
         if (!name || !email || !password) {
@@ -98,13 +130,18 @@ if (instForm) {
             });
 
             // 4. Create 'institutions' doc linked to user
-            const instRef = await addDoc(collection(db, "institutions"), {
+            // valid_from / valid_until are optional — only stored when provided
+            const instPayload = {
                 name: name,
                 adminEmail: email,
                 adminUid: newUser.uid,
                 active: true,
                 createdAt: serverTimestamp()
-            });
+            };
+            if (validFrom)  instPayload.valid_from  = validFrom;
+            if (validUntil) instPayload.valid_until = validUntil;
+
+            const instRef = await addDoc(collection(db, "institutions"), instPayload);
 
             // Update user doc with institutionId as well (optional but good for reverse lookup)
             await setDoc(doc(db, "users", newUser.uid), {
@@ -159,21 +196,44 @@ async function loadInstitutions() {
         snapshot.forEach((docSnap) => {
             const data = docSnap.data();
             const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : "N/A";
-            const isActive = data.active !== false; // treat missing field as active
+
+            // --- Validity-aware status (backward compatible) ---
+            const { effective: isActive, expired } = computeEffectiveActive(data);
+
+            // Validity range display
+            let validityHtml = `<span class="text-muted small">—</span>`;
+            if (data.valid_from || data.valid_until) {
+                const fmtDate = d => d ? new Date(d).toLocaleDateString() : "∞";
+                const rangeLabel = `${fmtDate(data.valid_from)} → ${fmtDate(data.valid_until)}`;
+                const rangeClass = expired ? 'text-danger' : 'text-success';
+                validityHtml = `<span class="small ${rangeClass} fw-semibold">${rangeLabel}</span>`;
+                if (expired) validityHtml += ` <span class="badge bg-danger-subtle text-danger border ms-1" style="font-size:.7rem;">Expired</span>`;
+            }
+
+            // Status badge — shows Expired when applicable
+            let statusLabel, statusClass;
+            if (expired) {
+                statusLabel = 'Expired';  statusClass = 'bg-warning text-dark';
+            } else if (isActive) {
+                statusLabel = 'Active';   statusClass = 'bg-success';
+            } else {
+                statusLabel = 'Inactive'; statusClass = 'bg-danger';
+            }
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td class="ps-4 fw-bold text-dark">${data.name}</td>
                 <td><span class="text-muted small">${data.adminEmail}</span></td>
                 <td><span class="badge bg-light text-dark border">${date}</span></td>
+                <td>${validityHtml}</td>
                 <td>
-                    <span class="badge status-badge ${isActive ? 'bg-success' : 'bg-danger'} me-2">
-                        ${isActive ? 'Active' : 'Inactive'}
-                    </span>
+                    <span class="badge status-badge ${statusClass} me-2">${statusLabel}</span>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm ${isActive ? 'btn-outline-warning' : 'btn-outline-success'} toggle-status-btn me-1" title="${isActive ? 'Deactivate' : 'Activate'}">
-                        <i class="fa-solid ${isActive ? 'fa-ban' : 'fa-check-circle'} me-1"></i>${isActive ? 'Deactivate' : 'Activate'}
+                    <button class="btn btn-sm ${isActive && !expired ? 'btn-outline-warning' : 'btn-outline-success'} toggle-status-btn me-1"
+                        title="${isActive && !expired ? 'Deactivate' : 'Activate'}">
+                        <i class="fa-solid ${isActive && !expired ? 'fa-ban' : 'fa-check-circle'} me-1"></i>
+                        ${isActive && !expired ? 'Deactivate' : 'Activate'}
                     </button>
                     <button class="btn btn-sm btn-outline-danger delete-btn" data-id="${docSnap.id}" title="Delete">
                         <i class="fa-solid fa-trash"></i>
@@ -181,8 +241,10 @@ async function loadInstitutions() {
                 </td>
             `;
 
+            // Pass the raw manualActive (data.active) to the toggle — not the computed one
+            const manualActive = data.active !== false;
             tr.querySelector(".toggle-status-btn").addEventListener("click", () => {
-                toggleInstitutionStatus(docSnap.id, isActive, tr);
+                toggleInstitutionStatus(docSnap.id, manualActive, tr);
             });
 
             // Delete Handler
