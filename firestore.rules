@@ -114,5 +114,20 @@ service cloud.firestore {
     match /marks/{markId} {
         allow read, write: if isSuperAdmin() || isInstitutionAdmin();
     }
+
+    /* =============================
+       EXAM TYPES
+       ============================= */
+    match /examTypes/{examTypeId} {
+      allow create: if request.auth != null &&
+        request.resource.data.institutionId ==
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.institutionId;
+
+      allow update, delete: if request.auth != null &&
+        resource.data.institutionId ==
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.institutionId;
+
+      allow read: if request.auth != null;
+    }
   }
 }

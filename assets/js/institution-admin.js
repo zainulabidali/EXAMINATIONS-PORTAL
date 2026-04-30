@@ -54,7 +54,7 @@ async function loadInstitutionId(uid) {
         }
         currentInstitutionId = userDoc.data().institutionId;
 
-        // Load custom exam types saved in the institution document
+        // Load custom exam types saved in the institution document (Legacy)
         const instDoc = await getDoc(doc(db, "institutions", currentInstitutionId));
         if (instDoc.exists() && instDoc.data().examTypes) {
             const examSelect = document.getElementById("globalExamType");
@@ -67,6 +67,20 @@ async function loadInstitutionId(uid) {
                 }
             });
         }
+
+        // Load custom exam types from the new examTypes collection
+        const examsQuery = query(collection(db, "examTypes"), where("institutionId", "==", currentInstitutionId));
+        const examsSnap = await getDocs(examsQuery);
+        examsSnap.forEach(docSnap => {
+            const ext = docSnap.data().name;
+            const examSelect = document.getElementById("globalExamType");
+            if (ext && ![...examSelect.options].some(o => o.value === ext)) {
+                const opt = document.createElement("option");
+                opt.value = ext;
+                opt.textContent = ext;
+                examSelect.appendChild(opt);
+            }
+        });
     } catch (err) {
         console.error("loadInstitutionId:", err);
         Toast.error("Failed to load user profile.");
@@ -204,15 +218,29 @@ async function saveNewExamType() {
     const btn = document.getElementById("saveExamTypeBtn");
     btn.disabled = true;
     try {
-        const instRef = doc(db, "institutions", currentInstitutionId);
-        const instDoc = await getDoc(instRef);
-        let examTypes = ["Annual Exam", "Half Yearly Exam", "Quarterly Exam", "Model Exam"];
-        if (instDoc.exists() && instDoc.data().examTypes) {
-            examTypes = instDoc.data().examTypes;
-        }
-        if (!examTypes.includes(val)) examTypes.push(val);
+        // FIX 2 & 3: Fetch current user doc and extract institutionId
+        const userDocRef = doc(db, "users", auth.currentUser.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        const institutionId = userDocSnap.data()?.institutionId;
 
-        await setDoc(instRef, { examTypes }, { merge: true });
+        if (!institutionId) {
+            Toast.error("Institution not linked");
+            btn.disabled = false;
+            return;
+        }
+
+        const payload = {
+            name: val,
+            institutionId: institutionId,
+            createdAt: serverTimestamp()
+        };
+
+        // FIX 4: Debug logging
+        console.log("Exam Save Payload:", payload);
+
+        // Save to examTypes collection
+        const ref = doc(collection(db, "examTypes"));
+        await setDoc(ref, payload);
 
         const opt = document.createElement("option");
         opt.value = val;
